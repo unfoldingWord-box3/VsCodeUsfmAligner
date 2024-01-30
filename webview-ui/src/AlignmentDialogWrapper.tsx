@@ -1,5 +1,18 @@
 // @ts-ignore
 import React from 'react';
+// @ts-ignore
+import usfmjs from 'usfm-js';
+// @ts-ignore
+import { usfmHelpers } from 'word-aligner-rcl';
+import {
+    VSCodeButton,
+    VSCodeDropdown,
+    VSCodeOption
+} from '@vscode/webview-ui-toolkit/react';
+// import {
+//     alignmentFinishedType,
+//     WordAlignerDialog,
+// } from './components/WordAlignerDialog';
 
 console.log("AlignmentDialogWrapper Started")
 
@@ -22,28 +35,57 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
     getUsfm,
     navigateAndReadFile,
 }) => {
-    //state var for the source map.
-    const [sourceMap, setSourceMap] = React.useState<SourceMapI>({});
+    const [targetBookObj, setTargetBookObj] = React.useState<object|null>(null);
+    const [originalBookObj, setOrginalBookObj] = React.useState<object|null>(null);
+    const [bookId, setBookId] = React.useState<string>('');
+    const [chapter, setChapter] = React.useState<string>('1');
+    const [chapterList, setChapterList] = React.useState<string[]>([]);
+    const [verse, setVerse] = React.useState<string>('1');
+    const [verseList, setVerseList] = React.useState<string[]>([]);
+    const [targetVerseObj, setTargetVerseObj] = React.useState<object|null>(null);
+    const [originalVerseObj, setOriginalVerseObj] = React.useState<object|null>(null);
+    const [showAligner, setShowAligner] = React.useState<boolean>(false);
+    const [fileModified, setFileModified] = React.useState<boolean>(false);
 
-    const [targetUsfm, setTargetUsfm] = React.useState<string>("");
-    const [originalUsfm, setOriginalUsfm] = React.useState<string>("");
-
-    async function getSourceMap(){
-        console.log( "requesting sourceMap:", reference );
-        let sourceMap : any = await getConfiguration("sourceMap");
-        if( Object.keys(sourceMap).length == 0 ){ 
-            sourceMap = {"(.*)\\.usfm": "source/\\1.usfm"};
-            console.log( "received sourceMap is null", sourceMap );
-        }
-        console.log( "received sourceMap:", sourceMap );
-        setSourceMap(sourceMap);
+    function getBookId(bookObjects: object):string|null {
+        const details = usfmHelpers.getUSFMDetails(bookObjects)
+        return details?.book?.id
     }
 
-    if( Object.keys(sourceMap).length == 0 ){ 
-        console.log( "requesting targetUsfm:", {reference} );
-        getSourceMap(); 
-    }else{
-        console.log( "Have sourceMap:", sourceMap );
+    function onAlignedBibleLoad(bookUsfm: string): void {
+        console.log('onAlignedBibleLoad data', bookUsfm?.substring(0, 100))
+        const bookObjects = bookUsfm && usfmjs.toJSON(bookUsfm)
+        if (bookObjects) {
+            setTargetBookObj(bookObjects)
+            const _bookId = getBookId(bookObjects)
+            if (_bookId) {
+                setBookId(_bookId || '')
+                setOrginalBookObj(null) // clear original book since book has changed
+                setFileModified(false)
+            }
+        }
+    }
+
+    function onOriginalBibleLoad(bookUsfm: string): void {
+        console.log('onOriginalBibleLoad data', bookUsfm?.substring(0, 100))
+        const bookObjects = bookUsfm && usfmjs.toJSON(bookUsfm)
+        if (bookObjects) {
+            const _bookId = getBookId(bookObjects)
+            if (bookId === _bookId) {
+                setOrginalBookObj(bookObjects)
+            } else {
+                console.error(`onOriginalBibleLoad: invalid original book '${_bookId}' loaded, should be '${bookId}'`)
+            }
+        }
+    }
+
+    async function getOriginalBible() {
+        const response = await navigateAndReadFile('OriginalBibleUsfm');
+        const originalLangContent = response?.contents
+        console.log("getOriginalBible() received original USFM. ", originalLangContent?.substring(0, 200));
+        if (originalLangContent) {
+            onOriginalBibleLoad(originalLangContent)
+        }
     }
 
     async function _getUsfm(){
@@ -51,30 +93,44 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
         const fileContent = await getUsfm();
         console.log( "_getUsfm() received USFM. " + fileContent?.substring(0,400) );
         if( fileContent ){
-            const response = await navigateAndReadFile('OriginalBibleUsfm');
-            const originalLangContent = response?.contents
-            console.log( "_getUsfm() received original USFM. ", originalLangContent?.substring(0,400) );
-            if (originalLangContent) {
-                setOriginalUsfm(originalLangContent)
-            }
-            setTargetUsfm(fileContent);
+            await getOriginalBible();
+            onAlignedBibleLoad(fileContent)
         }
     }
 
-    if( targetUsfm === "" ){ 
+    if(!targetBookObj){ 
         console.log( "requesting targetUsfm:", {reference} );
         _getUsfm(); 
     } else {
-        console.log( "Have targetUsfm. " + targetUsfm );
+        console.log( "Have targetBookObj" );
     }
 
+    // @ts-ignore
+    const targetChapters = targetBookObj ? Object.keys(targetBookObj.chapters) : []
+    // @ts-ignore
+    const originalChapters = originalBookObj ? Object.keys(originalBookObj.chapters) : []
+
+    function getPrompt() {
+        let prompt = ''
+        if (!targetBookObj || targetChapters?.length === 0) {
+            prompt = 'Missing Target bible'
+        } else if(!originalBookObj || originalChapters?.length === 0) {
+            return <VSCodeButton style={{ margin: "20px 50px" }} onClick={() => getOriginalBible()}>
+                Load Original Book
+            </VSCodeButton>;
+        } else {
+            prompt = 'Have both bibles'
+        }
+
+        return <div style={{ padding: "20px"}}> <b> {prompt} </b></div>
+    }
     return (
         <div>
             <p>Alignment dialog wrapper</p>
-            <p>{reference}</p>
-            <p>{Object.entries(sourceMap).map( ([key, value]) => <p>{key} : {value}</p>)}</p>
-            <p>Small file:</p>
-            <p>{targetUsfm}</p>
+            <p>{`${bookId} - ${reference}`}</p>
+            <p>{`target chapters ${targetChapters}`}</p>
+            <p>{`original chapters ${originalChapters}`}</p>
+            <p>{getPrompt()}</p>
         </div>
     )
 }

@@ -9,10 +9,7 @@ import {
     VSCodeDropdown,
     VSCodeOption
 } from '@vscode/webview-ui-toolkit/react';
-// import {
-//     alignmentFinishedType,
-//     WordAlignerDialog,
-// } from './components/WordAlignerDialog';
+import WordAlignerDialog, { alignmentFinishedType, ScriptureReferenceType } from "./components/WordAlignerDialog.tsx";
 
 console.log("AlignmentDialogWrapper Started")
 
@@ -29,7 +26,7 @@ interface SourceMapI{
 }
 
 const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
-    reference,
+    reference: refStr,
     getConfiguration,
     getFile,
     getUsfm,
@@ -38,10 +35,6 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
     const [targetBookObj, setTargetBookObj] = React.useState<object|null>(null);
     const [originalBookObj, setOrginalBookObj] = React.useState<object|null>(null);
     const [bookId, setBookId] = React.useState<string>('');
-    const [chapter, setChapter] = React.useState<string>('1');
-    const [chapterList, setChapterList] = React.useState<string[]>([]);
-    const [verse, setVerse] = React.useState<string>('1');
-    const [verseList, setVerseList] = React.useState<string[]>([]);
     const [targetVerseObj, setTargetVerseObj] = React.useState<object|null>(null);
     const [originalVerseObj, setOriginalVerseObj] = React.useState<object|null>(null);
     const [showAligner, setShowAligner] = React.useState<boolean>(false);
@@ -52,29 +45,33 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
         return details?.book?.id
     }
 
-    function onAlignedBibleLoad(bookUsfm: string): void {
+    function onAlignedBibleLoad(bookUsfm: string): string|null {
         console.log('onAlignedBibleLoad data', bookUsfm?.substring(0, 100))
+        let alignBookId:string|null = null
         const bookObjects = bookUsfm && usfmjs.toJSON(bookUsfm)
         if (bookObjects) {
             setTargetBookObj(bookObjects)
-            const _bookId = getBookId(bookObjects)
-            if (_bookId) {
-                setBookId(_bookId || '')
+            alignBookId = getBookId(bookObjects)
+            if (alignBookId) {
+                setBookId(alignBookId || '')
                 setOrginalBookObj(null) // clear original book since book has changed
                 setFileModified(false)
             }
         }
+        return alignBookId
     }
 
-    function onOriginalBibleLoad(bookUsfm: string): void {
+    function onOriginalBibleLoad(bookUsfm: string, alignedBookId: string|null): void {
+        let origBookId:string|null = null
         console.log('onOriginalBibleLoad data', bookUsfm?.substring(0, 100))
         const bookObjects = bookUsfm && usfmjs.toJSON(bookUsfm)
         if (bookObjects) {
-            const _bookId = getBookId(bookObjects)
-            if (bookId === _bookId) {
+            origBookId = getBookId(bookObjects)
+            if (origBookId === alignedBookId) {
                 setOrginalBookObj(bookObjects)
+                setShowAligner(true)
             } else {
-                console.error(`onOriginalBibleLoad: invalid original book '${_bookId}' loaded, should be '${bookId}'`)
+                console.error(`onOriginalBibleLoad: invalid original book '${origBookId}' loaded, should be '${alignedBookId}'`)
             }
         }
     }
@@ -83,22 +80,74 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
         const response = await navigateAndReadFile('OriginalBibleUsfm');
         const originalLangContent = response?.contents
         console.log("getOriginalBible() received original USFM. ", originalLangContent?.substring(0, 200));
+        return originalLangContent
+    }
+
+    async function getNewOriginalBible() {
+        const originalLangContent = await getOriginalBible();
         if (originalLangContent) {
-            onOriginalBibleLoad(originalLangContent)
+            onOriginalBibleLoad(originalLangContent, bookId)
         }
     }
 
     async function _getUsfm(){
-        console.log( "_getUsfm() requesting USFM:", {reference} );
+        console.log( "_getUsfm() requesting USFM:", {reference: refStr} );
         const fileContent = await getUsfm();
         console.log( "_getUsfm() received USFM. " + fileContent?.substring(0,400) );
         if( fileContent ){
-            await getOriginalBible();
-            onAlignedBibleLoad(fileContent)
+            const originalLangContent = await getOriginalBible();
+            // update state
+            const alignedBookId = onAlignedBibleLoad(fileContent)
+            if (originalLangContent) {
+                onOriginalBibleLoad(originalLangContent, alignedBookId)
+            }
         }
     }
 
-    if(!targetBookObj){ 
+    React.useEffect(() => {
+        setTargetBookObj(null)
+        setOrginalBookObj(null)
+        setShowAligner(false)
+    }, [ refStr ])
+
+    const reference = React.useMemo(() => {
+        let reference:ScriptureReferenceType = {
+            bookId: null,
+            chapter: '',
+            verse: '',
+        }
+        if (refStr) {
+            const [chapter, verse] = refStr.split(':')
+            reference = {
+                bookId,
+                chapter,
+                verse,
+            }
+        }
+        return reference
+    }, [ refStr, bookId ])
+
+    function onAlignmentFinished(data: alignmentFinishedType): void {
+        setShowAligner(false)
+        console.log(`onAlignmentFinished: alignmentChanged: ${data?.alignmentChanged}`, data)
+        if (data?.alignmentChanged && data?.targetVerseObj) {
+            // @ts-ignore
+            const verses = targetBookObj?.chapters?.[chapter]
+            // make shallow copy of verses and update with new verse content
+            const newVerses = { ...verses }
+            newVerses[reference?.verse || ''] = data?.targetVerseObj
+            const _targetBookObj = targetBookObj
+            // @ts-ignore
+            _targetBookObj.chapters[chapter] = newVerses;
+            setTargetBookObj(_targetBookObj) // save revised
+            // TODO save data
+            // updateVerseObjects(_targetBookObj); // update for current verse
+            setFileModified(true)
+        }
+    }
+
+    
+    if(!targetBookObj && refStr){ 
         console.log( "requesting targetUsfm:", {reference} );
         _getUsfm(); 
     } else {
@@ -112,14 +161,24 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
 
     function getPrompt() {
         let prompt = ''
-        if (!targetBookObj || targetChapters?.length === 0) {
+        if (!refStr) {
+            prompt = 'Missing Reference'
+        } else if (!targetBookObj || targetChapters?.length === 0) {
             prompt = 'Missing Target bible'
         } else if(!originalBookObj || originalChapters?.length === 0) {
-            return <VSCodeButton style={{ margin: "20px 50px" }} onClick={() => getOriginalBible()}>
+            return <VSCodeButton style={{ margin: "20px 50px" }} onClick={() => getNewOriginalBible()}>
                 Load Original Book
-            </VSCodeButton>;
+            </VSCodeButton>
+        } else if (showAligner) {
+            // prompt = 'Have both bibles'
+            return <WordAlignerDialog
+                targetVerseObj={targetVerseObj}
+                originalVerseObj={originalVerseObj}
+                onAlignmentFinished={onAlignmentFinished}
+                reference={reference}
+            />
         } else {
-            prompt = 'Have both bibles'
+            prompt = 'Have both bibles, but aligner is not enabled'
         }
 
         return <div style={{ padding: "20px"}}> <b> {prompt} </b></div>
@@ -127,7 +186,7 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
     return (
         <div>
             <p>Alignment dialog wrapper</p>
-            <p>{`${bookId} - ${reference}`}</p>
+            <p>{`${bookId} - ${refStr}`}</p>
             <p>{`target chapters ${targetChapters}`}</p>
             <p>{`original chapters ${originalChapters}`}</p>
             <p>{getPrompt()}</p>

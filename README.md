@@ -12,6 +12,28 @@ For example if there is an image subfolder under this extension project workspac
 
 > Tip: Many popular extensions utilize animations. This is an excellent way to show off this extension! We recommend short, focused animations that are easy to follow.
 
+## Running Extension in VsCode
+
+Open a terminal window.  Then enter and run this command to install dependencies:
+```
+npm install -g typescript
+npm run install:all
+```
+
+Then build the app by running this command:
+```
+npm run build:webview
+```
+
+When this is done, hit the F5 key which opens another instance of VS Code in debug mode.
+
+Then in the vsCode, do file => open folder and navigate to a folder which has your target language USFM files.  In the file navigation on the left, select a USFM file.  Then go down to the lower left and expand the USFM Outline.  Select a specifc chapter and verse.  You will then see two icons to the right of your selection - the first in the alignment tool and the second is the edit tool.
+
+## Developers
+
+npm run watch:webview
+
+
 ## Requirements
 
 If you have any requirements or dependencies, add a section describing those and how to install and configure them.
@@ -68,4 +90,4 @@ You can author this README using Visual Studio Code. Here are some useful editor
 * [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
-**Enjoy!**
+

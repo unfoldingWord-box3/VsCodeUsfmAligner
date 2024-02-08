@@ -16,7 +16,6 @@ For example if there is an image subfolder under this extension project workspac
 
 Open a terminal window.  Then enter and run this command to install dependencies:
 ```
-npm install -g typescript
 npm run install:all
 ```
 

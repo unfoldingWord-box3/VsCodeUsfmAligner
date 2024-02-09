@@ -14,7 +14,19 @@ For example if there is an image subfolder under this extension project workspac
 
 ## Running Extension in VsCode
 
-Open a terminal window.  Then enter and run this command to install dependencies:
+Open a terminal window and run:
+```
+node --version
+```
+
+Or for MacOS do:
+```
+/usr/local/bin/node --version
+```
+
+Make sure that node was found and that it is v18 or greater.  Install node if not found, or upgrade it.  Then rerun the version checking steps.
+
+Then enter and run this command to install dependencies:
 ```
 npm run install:all
 ```
@@ -24,7 +36,12 @@ Then build the app by running this command:
 npm run build:webview
 ```
 
-When this is done, hit the F5 key which opens another instance of VS Code in debug mode.
+Or if you are doing development and want it to recompile on every code change run this command:
+```
+npm run build:webview
+```
+
+When compile is done, hit the F5 key which opens another instance of VS Code in debug mode.
 
 Then in the vsCode, do file => open folder and navigate to a folder which has your target language USFM files.  In the file navigation on the left, select a USFM file.  Then go down to the lower left and expand the USFM Outline.  Select a specifc chapter and verse.  You will then see two icons to the right of your selection - the first in the alignment tool and the second is the edit tool.
 

@@ -147,13 +147,13 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
         console.log(`onAlignmentFinished: alignmentChanged: ${data?.alignmentChanged}`, data)
         if (data?.alignmentChanged && data?.targetVerseObj) {
             // @ts-ignore
-            const verses = targetBookObj?.chapters?.[chapter]
+            const verses = targetBookObj?.chapters?.[reference.chapter]
             // make shallow copy of verses and update with new verse content
             const newVerses = { ...verses }
             newVerses[reference?.verse || ''] = data?.targetVerseObj
             const _targetBookObj = targetBookObj
             // @ts-ignore
-            _targetBookObj.chapters[chapter] = newVerses;
+            _targetBookObj.chapters[reference.chapter] = newVerses;
             setTargetBookObj(_targetBookObj) // save revised
             // TODO save data
             // updateVerseObjects(_targetBookObj); // update for current verse

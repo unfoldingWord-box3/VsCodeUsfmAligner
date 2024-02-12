@@ -18,6 +18,7 @@ interface AlignmentDialogWrapperProps {
     getConfiguration: (key: string) => Promise<any>;
     getFile: (path: string) => Promise<string|undefined>;
     navigateAndReadFile: (key: string) => Promise<any>;
+    updateUSFM: (key: string) => Promise<boolean>;
     getUsfm: () => Promise<string|undefined>;
 }
 
@@ -31,6 +32,7 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
     getFile,
     getUsfm,
     navigateAndReadFile,
+    updateUSFM,
 }) => {
     const [targetBookObj, setTargetBookObj] = React.useState<object|null>(null);
     const [originalBookObj, setOrginalBookObj] = React.useState<object|null>(null);
@@ -156,7 +158,8 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
             _targetBookObj.chapters[reference.chapter] = newVerses;
             setTargetBookObj(_targetBookObj) // save revised
             // TODO save data
-            // updateVerseObjects(_targetBookObj); // update for current verse
+            const newUSFM = usfmjs.toUSFM(_targetBookObj)
+            updateUSFM(newUSFM); // update whole usfm
             setFileModified(true)
         }
     }
@@ -194,7 +197,10 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
                 reference={reference}
             />
         } else {
-            prompt = 'Have both bibles, but aligner is not enabled'
+            // prompt = 'Have both bibles, but aligner is not enabled'
+            return <VSCodeButton style={{ margin: "20px 50px" }} onClick={() => setShowAligner(true)}>
+                Align Verse
+            </VSCodeButton>
         }
 
         return <div style={{ padding: "20px"}}> <b> {prompt} </b></div>

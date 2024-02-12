@@ -215,6 +215,15 @@ export default function App() {
     return p;
   }
 
+  const updateUSFM = async (usfmData: string) : Promise<any> => {
+    const results = await postMessageWithResponse({
+      command:'updateUsfm',
+      commandArg: usfmData
+    });
+    const response = results?.response;
+    return !!response
+  }
+
   const navigateAndReadFile = async (key: string) : Promise<any> => {
     const results = await postMessageWithResponse({
       command:'navigateAndReadFile',
@@ -230,7 +239,7 @@ export default function App() {
     const response = results?.response;
     return response
   }
-  
+
   const getConfiguration = async (key: string) : Promise<any> => {
     return (await postMessageWithResponse( { command: 'getConfiguration', commandArg: key } ) ).response!;
   }
@@ -349,6 +358,7 @@ export default function App() {
         getFile={getFile}
         getUsfm={getUsfm}
         navigateAndReadFile={navigateAndReadFile}
+        updateUSFM={updateUSFM}
       />
     </p>
   </>

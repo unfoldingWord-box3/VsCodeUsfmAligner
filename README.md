@@ -45,10 +45,6 @@ When compile is done, hit the F5 key which opens another instance of VS Code in 
 
 Then in the vsCode, do file => open folder and navigate to a folder which has your target language USFM files.  In the file navigation on the left, select a USFM file.  Then go down to the lower left and expand the USFM Outline.  Select a specifc chapter and verse.  You will then see two icons to the right of your selection - the first in the alignment tool and the second is the edit tool.
 
-## Developers
-
-npm run watch:webview
-
 
 ## Requirements
 

@@ -909,6 +909,27 @@ export class UsfmEditorProvider implements vscode.CustomEditorProvider<UsfmDocum
                 this._navigateToAndReadFile(webviewPanel, message)
                 break;
 
+            case 'updateUsfm': //get the aligned USFM for book
+                console.log( "updateUsfm" );
+                if (message?.commandArg) {
+                    const newUsfm = message.commandArg || '';
+                    usfmToInternalJson(newUsfm).then(newDocumentData => {
+                        document.makeEdit( newDocumentData )
+                        webviewPanel.webview.postMessage({
+                            command: 'response',
+                            requestId: message.requestId,
+                            response: true
+                        });
+                    });
+                }
+                console.warn( "updateUsfm: empty data" );
+                webviewPanel.webview.postMessage({
+                    command: 'response',
+                    requestId: message.requestId,
+                    response: false
+                });
+                break;
+
             case 'getUsfm': //get the aligned USFM for book
                 console.log( "getUsfm" );
                 internalJsonToUsfm( document.documentData ).then(usfmData => {

@@ -14,6 +14,9 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker&in
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker&inline';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker&inline';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline';
+
+console.log("App")
+
 self.MonacoEnvironment = {
   getWorker(_, label) {
     if (label === 'json') {

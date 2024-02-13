@@ -72,8 +72,11 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
             setTargetBookObj(bookObjects)
             alignBookId = getBookId(bookObjects)
             if (alignBookId) {
-                setBookId(alignBookId || '')
-                setOrginalBookObj(null) // clear original book since book has changed
+                if (alignBookId !== bookId) {
+                    console.log('onAlignedBibleLoad new bookId', { alignBookId, bookId })
+                    setBookId(alignBookId || '')
+                    setOrginalBookObj(null) // clear original book since book has changed
+                }
                 setFileModified(false)
             }
         }

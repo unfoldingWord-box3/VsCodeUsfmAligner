@@ -915,6 +915,14 @@ export class UsfmEditorProvider implements vscode.CustomEditorProvider<UsfmDocum
                     const newUsfm = message.commandArg || '';
                     console.log( `updateUsfm: ${newUsfm.substring(0, 200)}` );
                     usfmToInternalJson(newUsfm).then(newDocumentData => {
+                        const previousStrippedVerion = document.documentData.strippedUsfm.version;
+                        const newStrippedVerion = previousStrippedVerion + 1 + Math.random()
+                        const previousAlignedVerion = document.documentData.alignmentData.version;
+                        const newAlignedVerion = previousAlignedVerion + 1 + Math.random()
+                        console.log('versions', { previousStrippedVerion, newStrippedVerion, previousAlignedVerion, newAlignedVerion})
+                        document.documentData.strippedUsfm.version = newStrippedVerion;
+                        document.documentData.alignmentData.version = newAlignedVerion;
+                        console.log( `updateUsfm: updated document, responding`, [document.documentData.strippedUsfm.version, document.documentData.alignmentData.version] );
                         document.makeEdit( newDocumentData )
                         console.log( `updateUsfm: updated document, responding` );
                         webviewPanel.webview.postMessage({

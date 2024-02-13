@@ -159,8 +159,9 @@ const AlignmentDialogWrapper: React.FC<AlignmentDialogWrapperProps> = ({
             setTargetBookObj(_targetBookObj) // save revised
             // TODO save data
             const newUSFM = usfmjs.toUSFM(_targetBookObj)
-            updateUSFM(newUSFM); // update whole usfm
-            setFileModified(true)
+            updateUSFM(newUSFM).then(() => {
+                setFileModified(true)
+            })
         }
     }
 

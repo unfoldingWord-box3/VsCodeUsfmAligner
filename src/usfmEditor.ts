@@ -910,17 +910,20 @@ export class UsfmEditorProvider implements vscode.CustomEditorProvider<UsfmDocum
                 break;
 
             case 'updateUsfm': //get the aligned USFM for book
-                console.log( "updateUsfm" );
+                console.log( "updateUsfm", Object.keys(message) );
                 if (message?.commandArg) {
                     const newUsfm = message.commandArg || '';
+                    console.log( `updateUsfm: ${newUsfm.substring(0, 200)}` );
                     usfmToInternalJson(newUsfm).then(newDocumentData => {
                         document.makeEdit( newDocumentData )
+                        console.log( `updateUsfm: updated document, responding` );
                         webviewPanel.webview.postMessage({
                             command: 'response',
                             requestId: message.requestId,
                             response: true
                         });
                     });
+                    break;
                 }
                 console.warn( "updateUsfm: empty data" );
                 webviewPanel.webview.postMessage({
